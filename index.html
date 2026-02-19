@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wovant Invoice Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy:   #002068;
+      --coral:  #FF5252;
+      --orange: #FD8B2E;
+      --light:  #F2F7FF;
+      --white:  #ffffff;
+      --g50:    #f8fafc;
+      --g100:   #f1f5f9;
+      --g200:   #e2e8f0;
+      --g400:   #94a3b8;
+      --g600:   #64748b;
+      --g800:   #1e293b;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #dde3f0;
+      color: var(--g800);
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ─── APP HEADER ───────────────────────────────── */
+    .app-header {
+      background: var(--navy);
+      padding: 0 32px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 16px rgba(0,32,104,.35);
+      position: relative;
+      z-index: 10;
+    }
+    .app-header::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--coral), var(--orange));
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header-logo {
+      height: 32px;
+      width: auto;
+      object-fit: contain;
+      /* On navy bg the white-bg jpg shows a box — we crop/clip it */
+      border-radius: 4px;
+    }
+    .header-wordmark {
+      font-family: 'Nunito', sans-serif;
+      font-weight: 900;
+      font-size: 18px;
+      color: white;
+      letter-spacing: 0.01em;
+    }
+    .header-wordmark span { color: var(--coral); }
+    .header-subtitle {
+      font-size: 11px;
+      color: rgba(255,255,255,.5);
+      font-weight: 400;
+      margin-left: 4px;
+    }
+
+    .header-actions { display: flex; gap: 10px; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 18px;
+      border-radius: 7px;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all .18s;
+    }
+    .btn-primary {
+      background: var(--coral);
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #e03e3e;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(255,82,82,.4);
+    }
+    .btn-secondary {
+      background: rgba(255,255,255,.12);
+      color: white;
+      border: 1px solid rgba(255,255,255,.2);
+    }
+    .btn-secondary:hover {
+      background: rgba(255,255,255,.2);
+    }
+
+    /* ─── LAYOUT ───────────────────────────────────── */
+    .app-body {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      height: calc(100vh - 60px);
+    }
+
+    /* ─── EDITOR PANEL ─────────────────────────────── */
+    .editor-panel {
+      background: white;
+      overflow-y: auto;
+      border-right: 1px solid var(--g200);
+    }
+    .editor-inner { padding: 20px; }
+
+    .esection {
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--g100);
+    }
+    .esection:last-child { border-bottom: none; margin-bottom: 0; }
+
+    .etitle {
+      font-family: 'Nunito', sans-serif;
+      font-weight: 800;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--navy);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .etitle::before {
+      content: '';
+      display: block;
+      width: 3px;
+      height: 13px;
+      background: var(--coral);
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .frow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .frow:last-child { margin-bottom: 0; }
+    .fgroup { margin-bottom: 10px; }
+    .fgroup:last-child { margin-bottom: 0; }
+
+    label {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--g600);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 4px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    input[type="email"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 7px 10px;
+      border: 1.5px solid var(--g200);
+      border-radius: 6px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12.5px;
+      color: var(--g800);
+      background: var(--g50);
+      transition: border-color .15s, background .15s;
+    }
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: var(--navy);
+      background: white;
+    }
+    textarea { resize: vertical; min-height: 54px; line-height: 1.5; }
+
+    /* Line items editor */
+    .li-head {
+      display: grid;
+      grid-template-columns: 1fr 52px 88px 28px;
+      gap: 6px;
+      padding-bottom: 6px;
+      border-bottom: 1.5px solid var(--navy);
+      margin-bottom: 8px;
+    }
+    .li-head span {
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--navy);
+    }
+    .li-head span:nth-child(2),
+    .li-head span:nth-child(3) { text-align: center; }
+
+    .li-row {
+      display: grid;
+      grid-template-columns: 1fr 52px 88px 28px;
+      gap: 6px;
+      margin-bottom: 6px;
+      align-items: center;
+    }
+    .li-row input { padding: 5px 8px; font-size: 12px; }
+    .li-row input[type="number"] { text-align: center; }
+
+    .btn-rm {
+      width: 28px;
+      height: 28px;
+      background: none;
+      border: 1.5px solid var(--g200);
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--g400);
+      font-size: 17px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .15s;
+      flex-shrink: 0;
+    }
+    .btn-rm:hover { background: #fff0f0; border-color: var(--coral); color: var(--coral); }
+
+    .btn-add-li {
+      width: 100%;
+      padding: 7px;
+      background: none;
+      border: 1.5px dashed var(--navy);
+      border-radius: 6px;
+      color: var(--navy);
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 6px;
+      transition: background .15s;
+    }
+    .btn-add-li:hover { background: var(--light); }
+
+    /* ─── PREVIEW PANEL ────────────────────────────── */
+    .preview-panel {
+      overflow-y: auto;
+      background: #dde3f0;
+      padding: 28px 28px 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ─── INVOICE TEMPLATE ─────────────────────────── */
+    .invoice {
+      background: white;
+      width: 794px;
+      min-height: 1000px;
+      box-shadow: 0 6px 40px rgba(0,0,0,.18);
+      border-radius: 3px;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* Header */
+    .inv-header {
+      background: var(--navy);
+      padding: 32px 48px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .inv-logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .inv-logo-img {
+      height: 46px;
+      width: 46px;
+      object-fit: contain;
+      border-radius: 6px;
+      background: white;
+      padding: 4px;
+      flex-shrink: 0;
+    }
+    .inv-logo-text {
+      font-family: 'Nunito', sans-serif;
+      font-weight: 900;
+      font-size: 26px;
+      color: white;
+      line-height: 1;
+    }
+    .inv-logo-text span { color: var(--coral); }
+    .inv-logo-tagline {
+      font-size: 10px;
+      color: rgba(255,255,255,.5);
+      letter-spacing: .06em;
+      margin-top: 3px;
+      font-style: italic;
+    }
+
+    .inv-title-block { text-align: right; }
+    .inv-title {
+      font-family: 'Nunito', sans-serif;
+      font-weight: 900;
+      font-size: 40px;
+      color: white;
+      letter-spacing: .1em;
+      line-height: 1;
+    }
+    .inv-num {
+      font-size: 13px;
+      color: rgba(255,255,255,.65);
+      margin-top: 5px;
+      letter-spacing: .04em;
+      font-weight: 500;
+    }
+
+    /* Accent bar */
+    .inv-bar {
+      height: 5px;
+      background: linear-gradient(90deg, var(--coral) 0%, var(--orange) 100%);
+    }
+
+    /* Meta strip */
+    .inv-meta {
+      background: var(--light);
+      padding: 18px 48px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      border-bottom: 1px solid #dce8ff;
+    }
+    .meta-item { display: flex; flex-direction: column; gap: 3px; }
+    .meta-lbl {
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .09em;
+      color: var(--coral);
+    }
+    .meta-val {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--navy);
+    }
+    .meta-val.amount {
+      font-family: 'Nunito', sans-serif;
+      font-size: 17px;
+      font-weight: 900;
+      color: var(--coral);
+    }
+
+    /* Body */
+    .inv-body { padding: 32px 48px; }
+
+    /* Billing grid */
+    .billing-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      margin-bottom: 32px;
+      padding-bottom: 28px;
+      border-bottom: 1.5px solid var(--g200);
+    }
+    .billing-lbl {
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--coral);
+      margin-bottom: 8px;
+    }
+    .billing-name {
+      font-family: 'Nunito', sans-serif;
+      font-weight: 800;
+      font-size: 15px;
+      color: var(--navy);
+      margin-bottom: 5px;
+    }
+    .billing-detail {
+      font-size: 12.5px;
+      color: var(--g600);
+      line-height: 1.65;
+    }
+
+    /* Items table */
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .items-table thead th {
+      background: var(--navy);
+      color: white;
+      padding: 11px 16px;
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      text-align: left;
+    }
+    .items-table thead th.r { text-align: right; }
+    .items-table thead th.c { text-align: center; }
+
+    .items-table tbody tr { border-bottom: 1px solid var(--g100); }
+    .items-table tbody tr:nth-child(even) { background: var(--g50); }
+    .items-table tbody tr:last-child { border-bottom: none; }
+
+    .items-table tbody td {
+      padding: 11px 16px;
+      font-size: 13px;
+      color: var(--g800);
+    }
+    .items-table tbody td.r { text-align: right; }
+    .items-table tbody td.c { text-align: center; color: var(--g600); }
+    .items-table tbody td.total-cell {
+      text-align: right;
+      font-weight: 700;
+      color: var(--navy);
+    }
+
+    /* Totals */
+    .totals-wrap {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 32px;
+    }
+    .totals-block { width: 290px; }
+
+    .tot-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 0;
+      font-size: 13px;
+      border-bottom: 1px solid var(--g100);
+    }
+    .tot-row:last-of-type { border-bottom: none; }
+    .tot-lbl { color: var(--g600); font-weight: 500; }
+    .tot-val { font-weight: 600; color: var(--g800); }
+    .tot-val.discount { color: #16a34a; }
+
+    .tot-final {
+      background: var(--navy);
+      padding: 12px 18px;
+      border-radius: 8px;
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .tot-final .tot-lbl {
+      color: white;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 800;
+      font-size: 14px;
+    }
+    .tot-final .tot-val {
+      font-family: 'Nunito', sans-serif;
+      font-weight: 900;
+      font-size: 20px;
+      color: var(--coral);
+    }
+
+    /* Notes */
+    .notes-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      padding-top: 24px;
+      border-top: 1.5px solid var(--g200);
+      margin-bottom: 32px;
+    }
+    .notes-lbl {
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--navy);
+      margin-bottom: 8px;
+    }
+    .notes-text {
+      font-size: 12px;
+      color: var(--g600);
+      line-height: 1.7;
+    }
+
+    /* Footer */
+    .inv-footer {
+      background: var(--navy);
+      padding: 18px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 3px solid var(--coral);
+    }
+    .footer-tagline {
+      font-size: 11px;
+      color: rgba(255,255,255,.55);
+      font-style: italic;
+    }
+    .footer-tagline strong {
+      color: var(--coral);
+      font-style: normal;
+      font-weight: 700;
+    }
+    .footer-contact {
+      font-size: 11px;
+      color: rgba(255,255,255,.55);
+      text-align: right;
+      line-height: 1.7;
+    }
+
+    /* Status badges */
+    .badge {
+      display: inline-block;
+      padding: 3px 11px;
+      border-radius: 20px;
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    /* Empty state */
+    .empty-items {
+      text-align: center;
+      padding: 28px;
+      color: var(--g400);
+      font-size: 13px;
+      font-style: italic;
+    }
+
+    /* ─── PRINT ─────────────────────────────────────── */
+    @media print {
+      body { background: white; overflow: visible; }
+      .app-header,
+      .editor-panel { display: none !important; }
+      .app-body {
+        display: block !important;
+        height: auto !important;
+        overflow: visible !important;
+      }
+      .preview-panel {
+        background: white !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        display: block !important;
+      }
+      .invoice {
+        width: 100% !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        min-height: auto !important;
+      }
+      @page { size: A4; margin: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ APP HEADER ═══════════════════════════════════ -->
+<header class="app-header">
+  <div class="header-brand">
+    <img src="Logo Blue.jpg" alt="Wovant" class="header-logo" onerror="this.style.display='none'">
+    <div>
+      <div class="header-wordmark"><span>Wo</span>vant <span class="header-subtitle">Invoice Generator</span></div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-secondary" onclick="resetForm()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+      Reset
+    </button>
+    <button class="btn btn-primary" onclick="window.print()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9V2h12v7"/><rect x="6" y="14" width="12" height="8" rx="1"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/></svg>
+      Print / Save PDF
+    </button>
+  </div>
+</header>
+
+<div class="app-body">
+
+  <!-- ═══ EDITOR PANEL ══════════════════════════════ -->
+  <aside class="editor-panel">
+    <div class="editor-inner">
+
+      <!-- Invoice Details -->
+      <div class="esection">
+        <div class="etitle">Invoice Details</div>
+        <div class="frow">
+          <div class="fgroup">
+            <label>Invoice #</label>
+            <input type="text" id="f-inv-num" value="INV-001" oninput="update()">
+          </div>
+          <div class="fgroup">
+            <label>Currency</label>
+            <select id="f-currency" onchange="update()">
+              <option value="$">USD — $</option>
+              <option value="€">EUR — €</option>
+              <option value="£">GBP — £</option>
+              <option value="₦">NGN — ₦</option>
+              <option value="₹">INR — ₹</option>
+              <option value="C$">CAD — C$</option>
+              <option value="A$">AUD — A$</option>
+              <option value="R">ZAR — R</option>
+            </select>
+          </div>
+        </div>
+        <div class="frow">
+          <div class="fgroup">
+            <label>Issue Date</label>
+            <input type="date" id="f-issue" oninput="update()">
+          </div>
+          <div class="fgroup">
+            <label>Due Date</label>
+            <input type="date" id="f-due" oninput="update()">
+          </div>
+        </div>
+        <div class="fgroup">
+          <label>Status</label>
+          <select id="f-status" onchange="update()">
+            <option>Unpaid</option>
+            <option>Paid</option>
+            <option>Overdue</option>
+            <option>Draft</option>
+            <option>Partial</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- From -->
+      <div class="esection">
+        <div class="etitle">From</div>
+        <div class="fgroup">
+          <label>Company Name</label>
+          <input type="text" id="f-from-name" value="Wovant" oninput="update()">
+        </div>
+        <div class="fgroup">
+          <label>Tagline</label>
+          <input type="text" id="f-from-tagline" value="Innovate. Create. Advance." oninput="update()">
+        </div>
+        <div class="fgroup">
+          <label>Address</label>
+          <textarea id="f-from-addr" rows="2" oninput="update()">Lagos, Nigeria</textarea>
+        </div>
+        <div class="frow">
+          <div class="fgroup">
+            <label>Email</label>
+            <input type="text" id="f-from-email" value="hello@wovant.com" oninput="update()">
+          </div>
+          <div class="fgroup">
+            <label>Phone</label>
+            <input type="text" id="f-from-phone" value="" placeholder="+234 ..." oninput="update()">
+          </div>
+        </div>
+        <div class="fgroup">
+          <label>Website</label>
+          <input type="text" id="f-from-web" value="www.wovant.com" oninput="update()">
+        </div>
+      </div>
+
+      <!-- Bill To -->
+      <div class="esection">
+        <div class="etitle">Bill To</div>
+        <div class="fgroup">
+          <label>Client / Company Name</label>
+          <input type="text" id="f-to-name" placeholder="Client Name" oninput="update()">
+        </div>
+        <div class="fgroup">
+          <label>Address</label>
+          <textarea id="f-to-addr" rows="2" placeholder="Client Address" oninput="update()"></textarea>
+        </div>
+        <div class="frow">
+          <div class="fgroup">
+            <label>Email</label>
+            <input type="text" id="f-to-email" placeholder="client@email.com" oninput="update()">
+          </div>
+          <div class="fgroup">
+            <label>Phone</label>
+            <input type="text" id="f-to-phone" placeholder="+1 ..." oninput="update()">
+          </div>
+        </div>
+      </div>
+
+      <!-- Line Items -->
+      <div class="esection">
+        <div class="etitle">Line Items</div>
+        <div class="li-head">
+          <span>Description</span>
+          <span style="text-align:center">Qty</span>
+          <span style="text-align:center">Unit Price</span>
+          <span></span>
+        </div>
+        <div id="li-editor"></div>
+        <button class="btn-add-li" onclick="addItem()">+ Add Line Item</button>
+      </div>
+
+      <!-- Taxes & Discounts -->
+      <div class="esection">
+        <div class="etitle">Adjustments</div>
+        <div class="frow">
+          <div class="fgroup">
+            <label>Discount (%)</label>
+            <input type="number" id="f-discount" value="0" min="0" max="100" step="0.5" oninput="update()">
+          </div>
+          <div class="fgroup">
+            <label>Tax / VAT (%)</label>
+            <input type="number" id="f-tax" value="0" min="0" max="100" step="0.5" oninput="update()">
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="esection">
+        <div class="etitle">Notes & Payment</div>
+        <div class="fgroup">
+          <label>Notes</label>
+          <textarea id="f-notes" rows="3" oninput="update()">Thank you for choosing Wovant. We appreciate your trust in our services and look forward to continuing our partnership.</textarea>
+        </div>
+        <div class="fgroup">
+          <label>Payment Details</label>
+          <textarea id="f-payment" rows="4" oninput="update()">Bank: [Bank Name]
+Account Name: Wovant
+Account No: [Account Number]
+Reference: [Invoice Number]</textarea>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- ═══ INVOICE PREVIEW ═══════════════════════════ -->
+  <div class="preview-panel">
+    <div class="invoice" id="invoice">
+
+      <!-- Header -->
+      <div class="inv-header">
+        <div class="inv-logo-wrap">
+          <img src="Logo Blue.jpg" alt="Wovant" class="inv-logo-img"
+               onerror="this.style.display='none'">
+          <div>
+            <div class="inv-logo-text"><span>Wo</span>vant</div>
+            <div class="inv-logo-tagline" id="i-tagline">Innovate. Create. Advance.</div>
+          </div>
+        </div>
+        <div class="inv-title-block">
+          <div class="inv-title">INVOICE</div>
+          <div class="inv-num" id="i-num">#INV-001</div>
+        </div>
+      </div>
+
+      <!-- Accent bar -->
+      <div class="inv-bar"></div>
+
+      <!-- Meta strip -->
+      <div class="inv-meta">
+        <div class="meta-item">
+          <div class="meta-lbl">Issue Date</div>
+          <div class="meta-val" id="i-issue">—</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-lbl">Due Date</div>
+          <div class="meta-val" id="i-due">—</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-lbl">Status</div>
+          <div id="i-status"><span class="badge" style="background:rgba(253,139,46,.15);color:#c47000;border:1.5px solid var(--orange)">Unpaid</span></div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-lbl">Amount Due</div>
+          <div class="meta-val amount" id="i-amount-due">$0.00</div>
+        </div>
+      </div>
+
+      <!-- Body -->
+      <div class="inv-body">
+
+        <!-- Billing -->
+        <div class="billing-grid">
+          <div>
+            <div class="billing-lbl">From</div>
+            <div class="billing-name" id="i-from-name">Wovant</div>
+            <div class="billing-detail" id="i-from-detail">Lagos, Nigeria<br>hello@wovant.com<br>www.wovant.com</div>
+          </div>
+          <div>
+            <div class="billing-lbl">Bill To</div>
+            <div class="billing-name" id="i-to-name">—</div>
+            <div class="billing-detail" id="i-to-detail">—</div>
+          </div>
+        </div>
+
+        <!-- Items table -->
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th class="c">Qty</th>
+              <th class="c">Unit Price</th>
+              <th class="r">Amount</th>
+            </tr>
+          </thead>
+          <tbody id="i-items">
+            <tr><td colspan="4" class="empty-items">No items added yet</td></tr>
+          </tbody>
+        </table>
+
+        <!-- Totals -->
+        <div class="totals-wrap">
+          <div class="totals-block">
+            <div class="tot-row">
+              <span class="tot-lbl">Subtotal</span>
+              <span class="tot-val" id="i-subtotal">$0.00</span>
+            </div>
+            <div class="tot-row" id="i-discount-row" style="display:none">
+              <span class="tot-lbl" id="i-discount-lbl">Discount</span>
+              <span class="tot-val discount" id="i-discount-val">—</span>
+            </div>
+            <div class="tot-row" id="i-tax-row" style="display:none">
+              <span class="tot-lbl" id="i-tax-lbl">Tax / VAT</span>
+              <span class="tot-val" id="i-tax-val">—</span>
+            </div>
+            <div class="tot-final">
+              <span class="tot-lbl">Total Due</span>
+              <span class="tot-val" id="i-total">$0.00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="notes-grid">
+          <div>
+            <div class="notes-lbl">Notes</div>
+            <div class="notes-text" id="i-notes">Thank you for choosing Wovant. We appreciate your trust in our services and look forward to continuing our partnership.</div>
+          </div>
+          <div>
+            <div class="notes-lbl">Payment Details</div>
+            <div class="notes-text" id="i-payment">—</div>
+          </div>
+        </div>
+
+      </div><!-- /inv-body -->
+
+      <!-- Footer -->
+      <div class="inv-footer">
+        <div class="footer-tagline">
+          <strong>Innovate. Create. Advance.</strong> &mdash; wovant.com
+        </div>
+        <div class="footer-contact" id="i-footer-contact">
+          hello@wovant.com
+        </div>
+      </div>
+
+    </div><!-- /invoice -->
+  </div><!-- /preview-panel -->
+
+</div><!-- /app-body -->
+
+<script>
+  /* ─── DATA ─────────────────────────────────────── */
+  let items = [
+    { desc: 'Web Development', qty: 1, price: 0 },
+    { desc: 'UI/UX Design',    qty: 1, price: 0 },
+  ];
+
+  /* ─── INIT ─────────────────────────────────────── */
+  window.addEventListener('DOMContentLoaded', () => {
+    const today = new Date();
+    const due   = new Date();
+    due.setDate(due.getDate() + 30);
+    document.getElementById('f-issue').value = toISODate(today);
+    document.getElementById('f-due').value   = toISODate(due);
+    renderEditor();
+    update();
+  });
+
+  function toISODate(d) {
+    return d.toISOString().split('T')[0];
+  }
+
+  function fmtDate(s) {
+    if (!s) return '—';
+    const d = new Date(s + 'T00:00:00');
+    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  function sym() {
+    return document.getElementById('f-currency').value;
+  }
+
+  function fmtMoney(n) {
+    const c = sym();
+    return c + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function esc(s) {
+    return String(s ?? '')
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;');
+  }
+
+  function nl2br(s) {
+    return esc(s).replace(/\n/g,'<br>');
+  }
+
+  /* ─── LINE ITEMS EDITOR ─────────────────────────── */
+  function renderEditor() {
+    const wrap = document.getElementById('li-editor');
+    wrap.innerHTML = items.map((it, i) => `
+      <div class="li-row" id="li-${i}">
+        <input type="text" value="${esc(it.desc)}" placeholder="Description"
+          oninput="items[${i}].desc=this.value;update()">
+        <input type="number" value="${it.qty}" min="0" step="1"
+          oninput="items[${i}].qty=parseFloat(this.value)||0;update()">
+        <input type="number" value="${it.price}" min="0" step="0.01" placeholder="0.00"
+          oninput="items[${i}].price=parseFloat(this.value)||0;update()">
+        <button class="btn-rm" onclick="removeItem(${i})" title="Remove">×</button>
+      </div>
+    `).join('');
+  }
+
+  function addItem() {
+    items.push({ desc: '', qty: 1, price: 0 });
+    renderEditor();
+    update();
+  }
+
+  function removeItem(i) {
+    items.splice(i, 1);
+    renderEditor();
+    update();
+  }
+
+  /* ─── STATUS BADGE ──────────────────────────────── */
+  const badgeStyles = {
+    'Unpaid':  'background:rgba(253,139,46,.15);color:#c47000;border:1.5px solid var(--orange)',
+    'Paid':    'background:rgba(34,197,94,.14);color:#15803d;border:1.5px solid #22c55e',
+    'Overdue': 'background:rgba(255,82,82,.14);color:#b91c1c;border:1.5px solid var(--coral)',
+    'Draft':   'background:rgba(100,116,139,.14);color:#475569;border:1.5px solid #94a3b8',
+    'Partial': 'background:rgba(59,130,246,.14);color:#1d4ed8;border:1.5px solid #3b82f6',
+  };
+
+  /* ─── MAIN UPDATE ───────────────────────────────── */
+  function update() {
+    const c = sym();
+
+    /* Invoice number */
+    const num = document.getElementById('f-inv-num').value || 'INV-001';
+    document.getElementById('i-num').textContent = '#' + num;
+
+    /* Dates */
+    document.getElementById('i-issue').textContent = fmtDate(document.getElementById('f-issue').value);
+    document.getElementById('i-due').textContent   = fmtDate(document.getElementById('f-due').value);
+
+    /* Status */
+    const st = document.getElementById('f-status').value;
+    document.getElementById('i-status').innerHTML =
+      `<span class="badge" style="${badgeStyles[st] || badgeStyles['Unpaid']}">${esc(st)}</span>`;
+
+    /* Tagline */
+    document.getElementById('i-tagline').textContent =
+      document.getElementById('f-from-tagline').value || 'Innovate. Create. Advance.';
+
+    /* From */
+    const fromName  = document.getElementById('f-from-name').value  || 'Wovant';
+    const fromAddr  = document.getElementById('f-from-addr').value;
+    const fromEmail = document.getElementById('f-from-email').value;
+    const fromPhone = document.getElementById('f-from-phone').value;
+    const fromWeb   = document.getElementById('f-from-web').value;
+    document.getElementById('i-from-name').textContent = fromName;
+    document.getElementById('i-from-detail').innerHTML =
+      [fromAddr, fromEmail, fromPhone, fromWeb].filter(Boolean).map(nl2br).join('<br>') || '—';
+
+    /* To */
+    const toName  = document.getElementById('f-to-name').value;
+    const toAddr  = document.getElementById('f-to-addr').value;
+    const toEmail = document.getElementById('f-to-email').value;
+    const toPhone = document.getElementById('f-to-phone').value;
+    document.getElementById('i-to-name').textContent = toName || '—';
+    document.getElementById('i-to-detail').innerHTML =
+      [toAddr, toEmail, toPhone].filter(Boolean).map(nl2br).join('<br>') || '—';
+
+    /* Items table */
+    const tbody = document.getElementById('i-items');
+    if (items.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4" class="empty-items">No items added yet</td></tr>`;
+    } else {
+      tbody.innerHTML = items.map(it => {
+        const line = it.qty * it.price;
+        return `
+          <tr>
+            <td>${esc(it.desc) || '<em style="color:#aaa">Unnamed item</em>'}</td>
+            <td class="c">${it.qty}</td>
+            <td class="c">${fmtMoney(it.price)}</td>
+            <td class="total-cell">${fmtMoney(line)}</td>
+          </tr>`;
+      }).join('');
+    }
+
+    /* Calculations */
+    const subtotal     = items.reduce((s, it) => s + it.qty * it.price, 0);
+    const discPct      = parseFloat(document.getElementById('f-discount').value) || 0;
+    const taxPct       = parseFloat(document.getElementById('f-tax').value)      || 0;
+    const discAmt      = subtotal * (discPct / 100);
+    const afterDisc    = subtotal - discAmt;
+    const taxAmt       = afterDisc * (taxPct / 100);
+    const total        = afterDisc + taxAmt;
+
+    document.getElementById('i-subtotal').textContent = fmtMoney(subtotal);
+
+    const dRow = document.getElementById('i-discount-row');
+    if (discPct > 0) {
+      dRow.style.display = 'flex';
+      document.getElementById('i-discount-lbl').textContent = `Discount (${discPct}%)`;
+      document.getElementById('i-discount-val').textContent = `−${fmtMoney(discAmt)}`;
+    } else {
+      dRow.style.display = 'none';
+    }
+
+    const tRow = document.getElementById('i-tax-row');
+    if (taxPct > 0) {
+      tRow.style.display = 'flex';
+      document.getElementById('i-tax-lbl').textContent = `Tax / VAT (${taxPct}%)`;
+      document.getElementById('i-tax-val').textContent = fmtMoney(taxAmt);
+    } else {
+      tRow.style.display = 'none';
+    }
+
+    document.getElementById('i-total').textContent      = fmtMoney(total);
+    document.getElementById('i-amount-due').textContent = fmtMoney(total);
+
+    /* Notes */
+    document.getElementById('i-notes').innerHTML =
+      nl2br(document.getElementById('f-notes').value) || '—';
+    document.getElementById('i-payment').innerHTML =
+      nl2br(document.getElementById('f-payment').value) || '—';
+
+    /* Footer contact */
+    document.getElementById('i-footer-contact').textContent =
+      [fromEmail, fromWeb].filter(Boolean).join('  ·  ') || '';
+  }
+
+  /* ─── RESET ─────────────────────────────────────── */
+  function resetForm() {
+    if (!confirm('Reset all fields to defaults?')) return;
+    document.getElementById('f-inv-num').value    = 'INV-001';
+    document.getElementById('f-currency').value   = '$';
+    document.getElementById('f-status').value     = 'Unpaid';
+    document.getElementById('f-from-name').value  = 'Wovant';
+    document.getElementById('f-from-tagline').value = 'Innovate. Create. Advance.';
+    document.getElementById('f-from-addr').value  = 'Lagos, Nigeria';
+    document.getElementById('f-from-email').value = 'hello@wovant.com';
+    document.getElementById('f-from-phone').value = '';
+    document.getElementById('f-from-web').value   = 'www.wovant.com';
+    document.getElementById('f-to-name').value    = '';
+    document.getElementById('f-to-addr').value    = '';
+    document.getElementById('f-to-email').value   = '';
+    document.getElementById('f-to-phone').value   = '';
+    document.getElementById('f-discount').value   = '0';
+    document.getElementById('f-tax').value        = '0';
+    document.getElementById('f-notes').value      = 'Thank you for choosing Wovant. We appreciate your trust in our services and look forward to continuing our partnership.';
+    document.getElementById('f-payment').value    = 'Bank: [Bank Name]\nAccount Name: Wovant\nAccount No: [Account Number]\nReference: [Invoice Number]';
+
+    const today = new Date(), due = new Date();
+    due.setDate(due.getDate() + 30);
+    document.getElementById('f-issue').value = toISODate(today);
+    document.getElementById('f-due').value   = toISODate(due);
+
+    items = [
+      { desc: 'Web Development', qty: 1, price: 0 },
+      { desc: 'UI/UX Design',    qty: 1, price: 0 },
+    ];
+    renderEditor();
+    update();
+  }
+</script>
+</body>
+</html>
